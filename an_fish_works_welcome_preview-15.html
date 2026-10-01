@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AN Fish Works</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#222}
+header{background:#1565c0;color:#fff;text-align:center;padding:22px 15px}header h1{margin:0;font-size:27px}
+.wrap{max-width:760px;margin:20px auto;padding:0 14px}.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:15px;box-shadow:0 3px 12px #0001}
+button{width:100%;border:0;border-radius:10px;padding:15px;margin:7px 0;font-size:17px;background:#1565c0;color:#fff;text-align:left;padding-left:20px}
+button.active{background:#0d47a1}.panel{display:none}.panel.show{display:block}
+.purchase-title{display:flex;justify-content:space-between;align-items:center;gap:10px}.purchase-title h2{margin:0}
+.date{font-size:14px;background:#eef4ff;color:#1565c0;padding:7px 10px;border-radius:20px}
+.table-wrap{width:100%;overflow-x:auto}table{width:100%;border-collapse:collapse;table-layout:fixed;min-width:0}th,td{padding:10px 6px;border-bottom:1px solid #ddd;text-align:left;overflow-wrap:anywhere;word-break:break-word}th{background:#eef4ff}#purchase table th:nth-child(1),#purchase table td:nth-child(1){width:24%}#purchase table th:nth-child(n+2),#purchase table td:nth-child(n+2){width:15.2%}#team table th,#team table td{font-size:15px;padding:9px 6px}#team table th:nth-child(1),#team table td:nth-child(1),#team table th:nth-child(3),#team table td:nth-child(3){width:14%}#team table th:nth-child(2),#team table td:nth-child(2),#team table th:nth-child(4),#team table td:nth-child(4){width:36%}@media(max-width:480px){#purchase th,#purchase td,#team th,#team td{font-size:15px;padding:9px 4px}.purchase-title h2{font-size:28px}.date{font-size:12px;padding:6px 8px}}
+</style>
+</head>
+<body>
+<header><h1>AN Fish Works</h1></header>
+<div class="wrap">
+<div class="card">
+<button onclick="show('home',this)">🏠 Home</button>
+<button onclick="togglePurchase(this)" id="purchaseBtn">🛒 Daily Purchase</button>
+<button onclick="show('ice',this)">🧊 Ice List</button>
+<button onclick="show('team',this)">👥 Team List</button>
+<button onclick="show('house',this)">🧹 House Keeping List</button>
+<button onclick="show('travel',this)">🚐 Kottayam &amp; Kottiyam List</button>
+</div>
+
+<div id="home" class="card panel show">
+<h2>🐟 Welcome to AN Fish Works</h2>
+<p><b>Welcome to AN Fish Works!</b></p>
+<p>This website helps us easily manage and view our daily activities and important information.</p>
+<p>Use the buttons above to access the information you need.</p>
+<ul>
+<li>🛒 Daily Purchase</li>
+<li>🧊 Ice List</li>
+<li>👥 Team List</li>
+<li>🧹 House Keeping List</li>
+<li>🚐 Kottayam &amp; Kottiyam List</li>
+</ul>
+<p><b>Thank you for visiting AN Fish Works. 🙏</b></p>
+</div>
+
+<div id="purchase" class="card panel">
+<div class="purchase-title"><h2>Daily Purchase</h2><span class="date" id="purchaseDate">Loading…</span></div>
+<div class="table-wrap"><table id="purchaseTable"><thead><tr><th>Name</th><th>Rohu</th><th>Rup</th><th>Katla</th><th>Pang</th><th>Total</th></tr></thead><tbody id="purchaseTableBody"></tbody></table></div>
+</div>
+
+<div id="ice" class="card panel">
+<div class="purchase-title"><h2>Ice List</h2><span class="date" id="iceStatus">Loading…</span></div>
+<div class="table-wrap"><table><thead><tr><th>S.n</th><th>Name</th></tr></thead><tbody id="iceTableBody"></tbody></table></div></div>
+<div id="team" class="card panel">
+<div class="purchase-title"><h2>Team List</h2><span class="date" id="teamStatus">Loading…</span></div>
+<div class="table-wrap"><table><thead><tr><th>S.n</th><th>Team A</th><th>S.n</th><th>Team B</th></tr></thead><tbody id="teamTableBody"></tbody></table></div>
+</div>
+<div id="house" class="card panel">
+<div class="purchase-title"><h2>House Keeping List</h2><span class="date" id="houseStatus">Loading…</span></div>
+<div class="table-wrap"><table><thead><tr><th>S.n</th><th>Name</th></tr></thead><tbody id="houseTableBody"></tbody></table></div>
+</div>
+<div id="travel" class="card panel">
+<div class="purchase-title"><h2>🚐 Kottayam &amp; Kottiyam List</h2><span class="date" id="travelStatus">Loading…</span></div>
+<div class="table-wrap"><table><thead><tr><th>S.n</th><th>Team A</th><th>S.n</th><th>Team B</th></tr></thead><tbody id="travelTableBody"></tbody></table></div>
+</div>
+</div>
+<script>
+const SHEET_ID='1xOQJWl9PZ3hLIrkrGCvXmahqaC6yNEGyS-BVElsXVj4';
+const PURCHASE_GVIZ_BASE='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq';
+const ICE_GVIZ_URL=PURCHASE_GVIZ_BASE+'?tqx=out:json%3BresponseHandler:iceCallback&gid=1073353249&range=B3:C';
+const TEAM_GVIZ_BASE=PURCHASE_GVIZ_BASE;
+const TEAM_GVIZ_URL=TEAM_GVIZ_BASE+'?gid=1443337217&range=B2:E&tqx=responseHandler%3AteamCallback';
+
+function loadDailyPurchase(){
+  const body=document.getElementById('purchaseTableBody'), dateEl=document.getElementById('purchaseDate');
+  dateEl.textContent='Loading…'; body.innerHTML='';
+  window.purchaseCallback=function(data){
+    try{
+      const rows=(data.table&&data.table.rows)||[];
+      let parsed=[], latestDate='';
+      rows.forEach(r=>{
+        const vals=(r.c||[]).map(c=>c&&c.v!=null?String(c.v).trim():'');
+        if(!vals.some(Boolean)) return;
+        // In the Google Sheet the first visible data column is B; A may contain the date.
+        // Display columns are B:G = Name, Rohu, Rup, Katla, Pang, Total.
+        const looksLikeHeader = vals.some(v=>v.toLowerCase()==='name') && vals.some(v=>v.toLowerCase()==='rohu');
+        if(looksLikeHeader) return;
+        const dateCandidate=vals[0]||'';
+        if(!latestDate && dateCandidate) latestDate=dateCandidate;
+        const data=vals.slice(1,7);
+        let [name,rohu,rup,katla,pang,total]=data;
+        // Fallback for sheets with no date column: use A:F directly.
+        if(!name && vals.length>=6){ [name,rohu,rup,katla,pang,total]=vals.slice(0,6); }
+        if(name) parsed.push({name,rohu,rup,katla,pang,total});
+      });
+      body.innerHTML='';
+      parsed.forEach(x=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML='<td>'+esc(x.name)+'</td><td>'+esc(formatNumber(x.rohu))+'</td><td>'+esc(formatNumber(x.rup))+'</td><td>'+esc(formatNumber(x.katla))+'</td><td>'+esc(formatNumber(x.pang))+'</td><td>'+esc(formatNumber(x.total))+'</td>';
+        body.appendChild(tr);
+      });
+      dateEl.textContent=latestDate||'Live from Google Sheet';
+      if(!parsed.length) body.innerHTML='<tr><td colspan="6">No Daily Purchase data found.</td></tr>';
+    }catch(e){showPurchaseError();}
+  };
+  const old=document.getElementById('purchaseGvizScript'); if(old) old.remove();
+  const script=document.createElement('script'); script.id='purchaseGvizScript';
+  script.src=PURCHASE_GVIZ_BASE+'?tqx=out:json%3BresponseHandler:purchaseCallback&gid=0&range=A1:G&_='+Date.now();
+  script.onerror=showPurchaseError; document.body.appendChild(script);
+  setTimeout(()=>{if(dateEl.textContent==='Loading…') showPurchaseError()},10000);
+}
+function showPurchaseError(){
+  document.getElementById('purchaseDate').textContent='Could not load';
+  document.getElementById('purchaseTableBody').innerHTML='<tr><td colspan="6">Unable to load Daily Purchase. Please make sure the Google Sheet is published to web.</td></tr>';
+}
+
+function clearButtons(){document.querySelectorAll('button').forEach(b=>b.classList.remove('active'))}
+function hidePanels(){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('show'))}
+function show(id,btn){hidePanels();clearButtons();document.getElementById(id).classList.add('show');btn.classList.add('active')}
+function togglePurchase(btn){let p=document.getElementById('purchase'),open=p.classList.contains('show');hidePanels();clearButtons();if(!open){p.classList.add('show');btn.classList.add('active')}else{document.getElementById('home').classList.add('show')}}
+function formatNumber(v){
+  const n=Number(String(v).replace(/,/g,''));
+  if(!Number.isFinite(n)) return String(v??'');
+  return Number(n.toFixed(2)).toString();
+}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+
+function loadTeamList(){
+  const body=document.getElementById('teamTableBody'),status=document.getElementById('teamStatus');
+  status.textContent='Loading…'; body.innerHTML='';
+  window.teamCallback=function(data){
+    try{
+      const rows=(data.table&&data.table.rows)||[];
+      let teamA=[],teamB=[];
+      rows.forEach((r,i)=>{
+        const vals=(r.c||[]).map(c=>c&&c.v!=null?String(c.v).trim():'');
+        if(vals.length<4) return;
+        if(/^s\.?n$/i.test(vals[0]) || /^name$/i.test(vals[1])) return;
+        if(vals[1]) teamA.push({sn:vals[0]||String(teamA.length+1),name:vals[1]});
+        if(vals[3]) teamB.push({sn:vals[2]||String(teamB.length+1),name:vals[3]});
+      });
+      const count=Math.max(teamA.length,teamB.length);
+      for(let i=0;i<count;i++){
+        const a=teamA[i]||{},b=teamB[i]||{};
+        const tr=document.createElement('tr');
+        tr.innerHTML='<td>'+esc(a.sn||'')+'</td><td>'+esc(a.name||'')+'</td><td>'+esc(b.sn||'')+'</td><td>'+esc(b.name||'')+'</td>';
+        body.appendChild(tr);
+      }
+      status.textContent='Live from Google Sheet';
+      if(!count) body.innerHTML='<tr><td colspan="4">No Team List data found.</td></tr>';
+    }catch(e){showTeamError();}
+  };
+  const old=document.getElementById('teamGvizScript'); if(old) old.remove();
+  const script=document.createElement('script'); script.id='teamGvizScript'; script.src=TEAM_GVIZ_URL+'&_='+Date.now();
+  script.onerror=showTeamError; document.body.appendChild(script);
+  setTimeout(()=>{if(status.textContent==='Loading…') showTeamError()},10000);
+}
+function showTeamError(){
+  document.getElementById('teamStatus').textContent='Could not load';
+  document.getElementById('teamTableBody').innerHTML='<tr><td colspan="4">Unable to load Team List. Please make sure the Google Sheet is published to web.</td></tr>';
+}
+
+
+
+function loadTravelList(){
+  const body=document.getElementById('travelTableBody'),status=document.getElementById('travelStatus');
+  status.textContent='Loading…'; body.innerHTML='';
+  window.travelCallback=function(data){
+    try{
+      const rows=(data.table&&data.table.rows)||[];
+      body.innerHTML=''; let n=0;
+      rows.forEach(r=>{
+        const v=(r.c||[]).map(c=>c&&c.v!=null?String(c.v).trim():'');
+        if(!v.some(Boolean)) return;
+        // Kottayam & Kottiyam sheet: B/C = Team A, E/F = Team B.
+        const aSn=v[0]||'', aName=v[1]||'', bSn=v[2]||'', bName=v[3]||'';
+        if(/^(s\.?n|name|team a|team b)$/i.test(aSn)) return;
+        if(!aName && !bName) return;
+        n++;
+        const tr=document.createElement('tr');
+        tr.innerHTML='<td>'+esc(aSn||String(n))+'</td><td>'+esc(aName)+'</td><td>'+esc(bSn||String(n))+'</td><td>'+esc(bName)+'</td>';
+        body.appendChild(tr);
+      });
+      status.textContent='Live from Google Sheet';
+      if(!n) body.innerHTML='<tr><td colspan="4">No Kottayam & Kottiyam data found.</td></tr>';
+    }catch(e){showTravelError();}
+  };
+  const old=document.getElementById('travelGvizScript'); if(old) old.remove();
+  const script=document.createElement('script'); script.id='travelGvizScript';
+  script.src=PURCHASE_GVIZ_BASE+'?tqx=out:json%3BresponseHandler:travelCallback&gid=1190159427&range=B3:F&_='+Date.now();
+  script.onerror=showTravelError; document.body.appendChild(script);
+  setTimeout(()=>{if(status.textContent==='Loading…') showTravelError()},10000);
+}
+function showTravelError(){
+  document.getElementById('travelStatus').textContent='Could not load';
+  document.getElementById('travelTableBody').innerHTML='<tr><td colspan="4">Unable to load Kottayam & Kottiyam List. Please make sure the Google Sheet is published to web.</td></tr>';
+}
+
+function loadHouseList(){
+  const body=document.getElementById('houseTableBody'),status=document.getElementById('houseStatus');
+  status.textContent='Loading…'; body.innerHTML='';
+  window.houseCallback=function(data){
+    try{
+      const rows=(data.table&&data.table.rows)||[];
+      body.innerHTML=''; let n=0;
+      rows.forEach(r=>{
+        const vals=(r.c||[]).map(c=>c&&c.v!=null?String(c.v).trim():'');
+        if(!vals.some(Boolean)) return;
+        // House Keeping sheet: column B = S.n, column C = Name.
+        const sn=vals[0]||String(n+1);
+        const name=vals[1]||'';
+        if(!name || /^(name)$/i.test(name)) return;
+        n++;
+        const tr=document.createElement('tr');
+        tr.innerHTML='<td>'+esc(sn)+'</td><td>'+esc(name)+'</td>';
+        body.appendChild(tr);
+      });
+      status.textContent='Live from Google Sheet';
+      if(!n) body.innerHTML='<tr><td colspan="2">No House Keeping data found.</td></tr>';
+    }catch(e){showHouseError();}
+  };
+  const old=document.getElementById('houseGvizScript'); if(old) old.remove();
+  const script=document.createElement('script'); script.id='houseGvizScript';
+  script.src=PURCHASE_GVIZ_BASE+'?tqx=out:json%3BresponseHandler:houseCallback&gid=593988050&range=B3:C&_='+Date.now();
+  script.onerror=showHouseError; document.body.appendChild(script);
+  setTimeout(()=>{if(status.textContent==='Loading…') showHouseError()},10000);
+}
+function showHouseError(){
+  document.getElementById('houseStatus').textContent='Could not load';
+  document.getElementById('houseTableBody').innerHTML='<tr><td colspan="2">Unable to load House Keeping List. Please make sure the Google Sheet is published to web.</td></tr>';
+}
+
+function loadIceList(){
+  const body=document.getElementById('iceTableBody'),status=document.getElementById('iceStatus');
+  status.textContent='Loading…';
+  window.iceCallback=function(data){
+    try{
+      const rows=(data.table&&data.table.rows)||[];
+      body.innerHTML=''; let n=0;
+      rows.forEach(r=>{
+        const vals=(r.c||[]).map(c=>c&&c.v!=null?String(c.v).trim():'');
+        if(!vals.some(Boolean)) return;
+        // The sheet has S.n in column B and Name in column C.
+        const sn=vals[0]||String(n+1);
+        const name=vals[1]||'';
+        if(!name || /^(name)$/i.test(name)) return;
+        n++;
+        const tr=document.createElement('tr');
+        tr.innerHTML='<td>'+esc(sn)+'</td><td>'+esc(name)+'</td>';
+        body.appendChild(tr);
+      });
+      status.textContent='Live from Google Sheet';
+      if(!n) body.innerHTML='<tr><td colspan="2">No Ice List data found.</td></tr>';
+    }catch(e){showIceError();}
+  };
+  const old=document.getElementById('iceGvizScript'); if(old) old.remove();
+  const script=document.createElement('script'); script.id='iceGvizScript'; script.src=ICE_GVIZ_URL+'&_='+Date.now();
+  script.onerror=showIceError; document.body.appendChild(script);
+  setTimeout(()=>{if(status.textContent==='Loading…') showIceError()},10000);
+}
+function showIceError(){
+  const body=document.getElementById('iceTableBody'),status=document.getElementById('iceStatus');
+  status.textContent='Could not load';
+  body.innerHTML='<tr><td colspan="2">Unable to load Ice List. Please make sure the Google Sheet is published to web.</td></tr>';
+}
+loadDailyPurchase();
+loadIceList();
+loadTeamList();
+loadHouseList();
+loadTravelList();
+setInterval(loadDailyPurchase,60000);
+setInterval(loadIceList,60000);
+setInterval(loadTeamList,60000);
+setInterval(loadHouseList,60000);
+setInterval(loadTravelList,60000);
+</script>
+</body>
+</html>
